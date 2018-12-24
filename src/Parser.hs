@@ -1,5 +1,5 @@
 module Parser
-  (parse, HTML(..), Attribute(..)) where
+  (parse, Attribute(..), Attributes(..), Element(..), Elements(..)) where
 
 import           Text.Parsec        (many, many1, try, (<|>))
 import qualified Text.Parsec        as Parsec
@@ -15,30 +15,51 @@ parse input =
     Right formula ->
       show formula
 
-data HTML
-  = Tag String [Attribute] [HTML]
+-- Elements
+
+newtype Elements
+  = Elements [Element]
+  deriving Show
+
+data Element
+  = Node String Attributes Elements
   | Text String
+  deriving Show
+
+-- Attributes
+
+newtype Attributes = Attributes [Attribute]
   deriving Show
 
 data Attribute
   = Attribute String String
   deriving Show
 
-expression :: Parser [HTML]
-expression = many $ try tag <|> text
-  where
-    tag = do
-      char '<'
-      s <- letter
-      t <- many $ letter <|> digit
-      a <- many attribute
-      char '>'
-      c <- expression
-      char '<'
-      char '/'
-      string (s:t)
-      char '>'
-      return $ Tag (s:t) a c
+-- Parser
+
+expression :: Parser Elements
+expression = do
+  c <- many $ try node <|> text
+  return $ Elements c
+
+node :: Parser Element
+node = do
+  char '<'
+  s <- letter
+  t <- many $ letter <|> digit
+  a <- many attribute
+  char '>'
+  c <- expression
+  char '<'
+  char '/'
+  string (s:t)
+  char '>'
+  return $ Node (s:t) (Attributes a) c
+
+text :: Parser Element
+text = do
+  s <- many1 $ letter <|> space
+  return $ Text s
 
 attribute :: Parser Attribute
 attribute = do
@@ -50,8 +71,3 @@ attribute = do
   c <- many $ letter <|> digit <|> space
   char '\"'
   return $ Attribute (s:t) c
-
-text :: Parser HTML
-text = do
-  s <- many1 $ letter <|> space
-  return $ Text s
