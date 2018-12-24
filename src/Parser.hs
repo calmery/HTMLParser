@@ -1,10 +1,11 @@
 module Parser
   (parse, Attribute(..), Attributes(..), Element(..), Elements(..)) where
 
-import           Text.Parsec        (many, many1, try, (<|>))
-import qualified Text.Parsec        as Parsec
-import           Text.Parsec.Char   (char, digit, letter, space, string)
-import           Text.Parsec.String (Parser)
+import           Control.Applicative (pure, (*>))
+import           Text.Parsec         (many, many1, try, (<|>))
+import qualified Text.Parsec         as Parsec
+import           Text.Parsec.Char    (char, digit, letter, space, string)
+import           Text.Parsec.String  (Parser)
 
 parse :: String -> String
 parse input =
@@ -39,35 +40,33 @@ data Attribute
 
 expression :: Parser Elements
 expression = do
-  c <- many $ try node <|> text
-  return $ Elements c
+  elements <- many $ try node <|> text
+  pure $ Elements elements
 
 node :: Parser Element
 node = do
   char '<'
-  s <- letter
+  h <- letter
   t <- many $ letter <|> digit
-  a <- many attribute
+  let name = h:t
+  attributes <- many attribute
   char '>'
-  c <- expression
-  char '<'
-  char '/'
-  string (s:t)
-  char '>'
-  return $ Node (s:t) (Attributes a) c
+  elements <- expression
+  char '<' *> char '/' *> string name *> char '>'
+  pure $ Node name (Attributes attributes) elements
 
 text :: Parser Element
 text = do
-  s <- many1 $ letter <|> space
-  return $ Text s
+  t <- many1 $ letter <|> space
+  pure $ Text t
 
 attribute :: Parser Attribute
 attribute = do
   space
-  s <- letter
+  h <- letter
   t <- many $ letter <|> digit
-  char '='
+  let name = h:t
+  char '=' *> char '\"'
+  value <- many $ letter <|> digit <|> space
   char '\"'
-  c <- many $ letter <|> digit <|> space
-  char '\"'
-  return $ Attribute (s:t) c
+  pure $ Attribute name value
