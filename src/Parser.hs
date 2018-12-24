@@ -17,7 +17,7 @@ parse input =
 
 data HTML
   = Tag String [Attribute] HTML
-  | Children String
+  | Text String
   deriving Show
 
 data Attribute
@@ -25,7 +25,7 @@ data Attribute
   deriving Show
 
 expression :: Parser HTML
-expression = tag <|> children
+expression = tag <|> text
   where
     tag = do
       char '<'
@@ -34,15 +34,11 @@ expression = tag <|> children
       a <- many attribute
       char '>'
       c <- expression
-      do
-        char '<'
-        char '/'
-        string (s:t)
-        char '>'
+      char '<'
+      char '/'
+      string (s:t)
+      char '>'
       return $ Tag (s:t) a c
-    children = do
-      s <- many $ letter <|> space
-      return $ Children s
 
 attribute :: Parser Attribute
 attribute = do
@@ -54,3 +50,8 @@ attribute = do
   c <- many $ letter <|> digit <|> space
   char '\"'
   return $ Attribute (s:t) c
+
+text :: Parser HTML
+text = do
+  s <- many $ letter <|> space
+  return $ Text s
