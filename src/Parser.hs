@@ -1,7 +1,7 @@
 module Parser
   (parse, HTML(..), Attribute(..)) where
 
-import           Text.Parsec        (many, (<|>))
+import           Text.Parsec        (many, many1, try, (<|>))
 import qualified Text.Parsec        as Parsec
 import           Text.Parsec.Char   (char, digit, letter, space, string)
 import           Text.Parsec.String (Parser)
@@ -16,7 +16,7 @@ parse input =
       show formula
 
 data HTML
-  = Tag String [Attribute] HTML
+  = Tag String [Attribute] [HTML]
   | Text String
   deriving Show
 
@@ -24,8 +24,8 @@ data Attribute
   = Attribute String String
   deriving Show
 
-expression :: Parser HTML
-expression = tag <|> text
+expression :: Parser [HTML]
+expression = many $ try tag <|> text
   where
     tag = do
       char '<'
@@ -53,5 +53,5 @@ attribute = do
 
 text :: Parser HTML
 text = do
-  s <- many $ letter <|> space
+  s <- many1 $ letter <|> space
   return $ Text s
