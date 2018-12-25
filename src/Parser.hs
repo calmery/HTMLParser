@@ -79,6 +79,6 @@ attribute = do
   t <- many $ letter <|> digit
   let name = h:t
   char '=' *> char '\"'
-  value <- many $ letter <|> digit <|> oneOf ['/', ':', '.'] <|> space
+  value <- many $ letter <|> digit <|> oneOf ['/', ':', '-', '.'] <|> space
   char '\"'
   pure $ Attribute name value
