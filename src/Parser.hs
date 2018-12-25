@@ -2,9 +2,10 @@ module Parser
   (parse, Attribute(..), Attributes(..), Element(..), Elements(..)) where
 
 import           Control.Applicative (pure, (*>))
-import           Text.Parsec         (many, many1, try, (<|>))
+import           Text.Parsec         (many, many1, skipMany, try, (<|>))
 import qualified Text.Parsec         as Parsec
-import           Text.Parsec.Char    (char, digit, letter, space, string)
+import           Text.Parsec.Char    (char, digit, letter, newline, oneOf,
+                                      space, string, tab)
 import           Text.Parsec.String  (Parser)
 
 parse :: String -> String
@@ -45,6 +46,7 @@ expression = do
 
 node :: Parser Element
 node = do
+  skipMany $ newline <|> tab <|> space
   char '<'
   h <- letter
   t <- many $ letter <|> digit
@@ -53,11 +55,12 @@ node = do
   char '>'
   elements <- expression
   char '<' *> char '/' *> string name *> char '>'
+  skipMany $ newline <|> tab <|> space
   pure $ Node name (Attributes attributes) elements
 
 text :: Parser Element
 text = do
-  t <- many1 $ letter <|> space
+  t <- many1 $ letter <|> space <|> newline
   pure $ Text t
 
 attribute :: Parser Attribute
