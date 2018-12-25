@@ -51,12 +51,21 @@ node = do
   h <- letter
   t <- many $ letter <|> digit
   let name = h:t
-  attributes <- many attribute
-  char '>'
-  elements <- expression
-  char '<' *> char '/' *> string name *> char '>'
+  attributes <- many $ try attribute
+  elements <- close name <|> empty
   skipMany $ newline <|> tab <|> space
   pure $ Node name (Attributes attributes) elements
+  where
+    close name = do
+      char '>'
+      elements <- expression
+      char '<' *> char '/' *> string name *> char '>'
+      return elements
+    empty = do
+      skipMany space
+      char '/'
+      char '>'
+      return $ Elements []
 
 text :: Parser Element
 text = do
@@ -70,6 +79,6 @@ attribute = do
   t <- many $ letter <|> digit
   let name = h:t
   char '=' *> char '\"'
-  value <- many $ letter <|> digit <|> space
+  value <- many $ letter <|> digit <|> oneOf ['/', ':', '.'] <|> space
   char '\"'
   pure $ Attribute name value
